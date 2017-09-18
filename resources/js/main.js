@@ -1,22 +1,13 @@
 {
-	//nevie to prehravat ale nevie to ani vyhravat - opravit -> 4, 5, 0, 3, 1?(8 vyhrava)
 	const SVG = document.querySelector("svg");
 	const SVGRects = document.querySelectorAll("svg rect");
 	const winCombs = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 	const board = Array(9);
-	/*board[4] = "O";
-	board[8] = "X";
-	board[2] = "O";
-	board[6] = "X";
-	board[0] = "O";*/
 	const playerA = "X";
 	const playerB = "O";
 	const aiPlayer = playerA;
 	const humanPlayer = playerB;
-		let scores = [];
-let turn = aiPlayer;
-	//pushMove(turn, findBestMove(board));
-
+	let turn = aiPlayer;
 
 	SVG.addEventListener("click", onClick, false);
 
@@ -43,10 +34,8 @@ let turn = aiPlayer;
 		text.textContent = letter;
 		SVG.append(text);
 		board[index] = letter;
-		if (over(board)) {
-			console.log("trueečko");
+		if (over(board))
 			SVG.removeEventListener("click", onClick, false);
-		}
 
 	}
 
@@ -113,7 +102,6 @@ let turn = aiPlayer;
 		for (let i = 0; i < freeSpots.length; i++) {
 			board[freeSpots[i]] = aiPlayer;
 			const moveValue = minimax(board, 0, false);
-			scores.push(moveValue);
 			board[freeSpots[i]] = null;
 			if (moveValue > bestValue || (moveValue === bestValue && Math.random() <= 0.5)) {
 				bestMove = freeSpots[i];
@@ -127,5 +115,4 @@ let turn = aiPlayer;
 
 	if (turn === aiPlayer)
 		pushMove(aiPlayer, findBestMove(board));
-	//pushMove("X", findBestMove(board));
 }
