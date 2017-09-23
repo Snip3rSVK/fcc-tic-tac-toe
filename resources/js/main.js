@@ -1,42 +1,107 @@
-{
+
 	const SVG = document.querySelector("svg");
-	const SVGRects = document.querySelectorAll("svg rect");
+	const SVGRects = document.querySelectorAll(".rect");
+	const SVGRectsIndexesFull = [...Array(9).keys()]; // [0, 1, 2, 3, 4, 5, 6, 7, 8]
 	const winCombs = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 	const board = Array(9);
-	const playerA = "X";
-	const playerB = "O";
-	const aiPlayer = playerA;
-	const humanPlayer = playerB;
-	let turn = aiPlayer;
+	const resetButton = document.querySelector("#reset");
+	const playerX = "X";
+	const playerO = "O";
+	const aiPlayer = playerX;
+	const humanPlayer = playerO;
+	let turn = humanPlayer;
+	let starting = humanPlayer;
 
-	SVG.addEventListener("click", onClick, false);
+	resetButton.addEventListener("click", function() {
+		clearBoard();
+		resetScore();
+	});
 
 	function onClick(evt) {
 		const target = evt.target;
-		console.log(target);
-		if (turn === humanPlayer) {
-			console.log("parent: " + target.parentNode);
+		if (turn === humanPlayer && emptySpots(board).length > 1) {
 			pushMove(turn, Array.from(target.parentNode.children).indexOf(target));
 			pushMove(turn, findBestMove(board));
 		}
+		else if (turn === humanPlayer)
+			pushMove(turn, Array.from(target.parentNode.children).indexOf(target));
 	}
 
+	function removeListeners(indexes) {
+		for (const currNum of indexes) {
+			SVGRects[currNum].removeEventListener("click", onClick);
+			SVGRects[currNum].style.cursor = "default";
+		}
+	}
+
+	function addListeners(indexes) {
+		for (const currNum of indexes) {
+			SVGRects[currNum].addEventListener("click", onClick);
+			SVGRects[currNum].style.cursor = "pointer";
+		}
+	}
+
+	addListeners(SVGRectsIndexesFull);
+
 	function pushMove(letter, index) {
+		removeListeners(SVGRectsIndexesFull);
 		if (letter === aiPlayer)
 			turn = humanPlayer;
 		else
 			turn = aiPlayer;
 		const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-		const x = Number(SVGRects[index].getAttribute("x").replace(/\%/, "")) + 11;
-		const y = Number(SVGRects[index].getAttribute("y").replace(/\%/, "")) + 22;
+		const x = Number(SVGRects[index].getAttribute("x").replace(/\%/, "")) + 9;
+		const y = Number(SVGRects[index].getAttribute("y").replace(/\%/, "")) + 24;
 		text.setAttribute("x", `${x}%`);
 		text.setAttribute("y", `${y}%`);
-		text.textContent = letter;
+		text.textContent = letter.toLowerCase();
+		text.classList.add(letter.toLowerCase());
 		SVG.append(text);
 		board[index] = letter;
-		if (over(board))
-			SVG.removeEventListener("click", onClick, false);
+		if (over(board)) {
+			const promiseClearBoard = (ms) => new Promise(() => setTimeout(clearBoard, ms));
+			promiseClearBoard(500).then(() => clearBoard());
+			if (isWinComb(board, humanPlayer))
+				addToScore(humanPlayer);
+			else if (isWinComb(board, aiPlayer))
+				addToScore(aiPlayer);
+		}
+		else
+			addListeners(emptySpots(board));
+	}
 
+	function clearBoard() {
+		for (let i = 0; i < board.length; i++)
+			board[i] = null;
+		const xs = document.querySelectorAll(".x");
+		const os = document.querySelectorAll(".o");
+		for (let i = 0; i < xs.length; i++)
+			xs[i].parentNode.removeChild(xs[i]);
+		for (let i = 0; i < os.length; i++)
+			os[i].parentNode.removeChild(os[i]);
+		if (starting === aiPlayer) {
+			starting = humanPlayer;
+			turn = humanPlayer;
+			addListeners(SVGRectsIndexesFull);
+		}
+		else {
+			starting = aiPlayer;
+			turn = aiPlayer;
+			pushMove(turn, findBestMove(board));
+		}
+	}
+
+	function addToScore(letter) {
+		const scoreElem = document.querySelector(`.score-${letter.toLowerCase()}`);
+		console.log(scoreElem);
+		scoreElem.textContent = Number(scoreElem.textContent) + 1;
+	}
+
+	function resetScore() {
+		const scoreX = document.querySelector(".score-x");
+		const scoreO = document.querySelector(".score-o");
+		scoreX.textContent = 0;
+		scoreO.textContent = 0;
 	}
 
 	function isWinComb(board, letter) {
@@ -46,7 +111,7 @@
 		return false;
 	}
 
-	function avaibleSpots(board) {
+	function emptySpots(board) {
 		const indexes = [];
 		for (let i = 0; i < board.length; i++)
 			if (!board[i])
@@ -55,7 +120,7 @@
 	}
 
 	function over(board) {
-		return isWinComb(board, humanPlayer) || isWinComb(board, aiPlayer) || !avaibleSpots(board).length;
+		return isWinComb(board, humanPlayer) || isWinComb(board, aiPlayer) || !emptySpots(board).length;
 	}
 
 	function score(board, depth) {
@@ -63,7 +128,7 @@
 			return -10 + depth;
 		else if (isWinComb(board, aiPlayer))
 			return 10 - depth;
-		if (!avaibleSpots(board).length)
+		if (!emptySpots(board).length)
 			return 0;
 	}
 
@@ -71,7 +136,7 @@
 		if (over(board))
 			return score(board, depth);
 
-		const freeSpots = avaibleSpots(board);
+		const freeSpots = emptySpots(board);
 
 		if (maximizing) {
 			let bestValue = -Infinity;
@@ -94,25 +159,29 @@
 		}
 	}
 
+
 	function findBestMove(board) {
 		let bestValue = -Infinity;
-		let bestMove = null;
-		const freeSpots = avaibleSpots(board);
+		let bestMoves = [];
+		let randNumBewteen = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+		const freeSpots = emptySpots(board);
 
 		for (let i = 0; i < freeSpots.length; i++) {
 			board[freeSpots[i]] = aiPlayer;
 			const moveValue = minimax(board, 0, false);
 			board[freeSpots[i]] = null;
-			if (moveValue > bestValue || (moveValue === bestValue && Math.random() <= 0.5)) {
-				bestMove = freeSpots[i];
+			if (moveValue > bestValue) {
 				bestValue = moveValue;
+				bestMoves = [freeSpots[i]];
 			}
+			if (moveValue === bestValue)
+				bestMoves.push(freeSpots[i]);
 		}
 
-		console.log("best move: " + bestMove);
-		return bestMove;
+		const s = randNumBewteen(0, bestMoves.length - 1);
+		console.log("best move: " + bestMoves[s]);
+		return bestMoves[s];
 	}
 
 	if (turn === aiPlayer)
 		pushMove(aiPlayer, findBestMove(board));
-}
