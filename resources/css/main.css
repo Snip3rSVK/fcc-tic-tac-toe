@@ -9,6 +9,7 @@ body {
 	justify-content: center;
 	background: radial-gradient(circle at center, #232323 0%, #151515 55%);
 	font-family: "Varela Round";
+	color: #919191;
 	user-select: none;
 }
 
@@ -16,6 +17,19 @@ main {
 	display: flex;
 	align-items: center;
 	flex-direction: column;
+	max-width: 300px;
+}
+
+#beginning, #select-letter, #board {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.heading {
+	font-size: 30px;
+	font-weight: 400;
+	text-align: center;
 }
 
 svg {
@@ -47,17 +61,31 @@ svg text {
 	cursor: default;
 }
 
-#reset {
+.btn {
 	outline: 0;
 	border: 0;
 	background: #4a4a4a;
-	border-radius: 12px;
-	font-size: 14px;
+	border-radius: 100px;
 	color: #a3a3a3;
 	padding: 3px 16px;
 	font-family: "Varela Round";
 	cursor: pointer;
 	margin: 0;
+}
+
+.btn:hover {
+	background: linear-gradient(to right, #00b09b 0%, #96C93D 100%);
+	color: #fff;
+}
+
+#reset-btn {
+	font-size: 14px;
+}
+
+.beginning-btn {
+	font-size: 19px;
+	padding: 8px 28px;
+	margin-top: 24px;
 }
 
 #score {
@@ -73,4 +101,8 @@ svg text {
 
 .blue {
 	color: #00ccff;
+}
+
+.hidden {
+	display: none !important;
 }
