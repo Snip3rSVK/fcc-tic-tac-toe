@@ -17,6 +17,7 @@
 			board: Array(9),
 			numOfGames: 0,
 			onTurn: "X", // X always beginns
+			startedLastGame: "X",
 			onClickFunc: null,
 			player1: player1Letter,
 			player2: player1Letter === "X" ? "O" : "X",
@@ -45,7 +46,6 @@
 			gameInfo.onClickFunc = onClick;
 
 			function aiMove() {
-				removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
 				const index = findBestMove(gameInfo.board);
 				pushMove(gameInfo.player2, index); // pushMove adds listeners
 			}
@@ -171,6 +171,13 @@
 					if (whoWon(gameInfo.board))
 						addScoreTo(whoWon(gameInfo.board));
 					clearBoard();
+					gameInfo.startedLastGame = gameInfo.startedLastGame === "X" ? "O" : "X";
+					gameInfo.onTurn = gameInfo.startedLastGame;
+					if (gameInfo.onTurn === gameInfo.player2 && setupAI) {
+						console.log("pushMove onePlayer");
+						onePlayer();
+						console.log("pushMove", gameInfo.board);
+					}
 					addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
 				}, 500);
 			}
