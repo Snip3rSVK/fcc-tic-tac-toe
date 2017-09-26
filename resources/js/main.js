@@ -4,8 +4,8 @@
 
 	const switcher = {
 		beginning: beginning(),
-		selectLetter: undefined,
-		createGame: undefined
+		selectLetter: null,
+		createGame: null
 	};
 
 	/* ======== CREATE BOARD ======== */
@@ -17,7 +17,7 @@
 			board: Array(9),
 			numOfGames: 0,
 			onTurn: "X", // X always beginns
-			onClickFunc: undefined,
+			onClickFunc: null,
 			player1: player1Letter,
 			player2: player1Letter === "X" ? "O" : "X",
 			winCombs: [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
