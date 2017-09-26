@@ -29,7 +29,87 @@
 		};
 
 		const onePlayer = function() {
-			console.log("onePlayer");
+			/* gameInfo.player1 -> human
+			*  gameInfo.player2 -> computer */
+			addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+
+			if (gameInfo.onTurn === gameInfo.player2)
+				aiMove();
+
+			function onClick(evt) {
+				const index = Array.from(evt.target.parentNode.children).indexOf(evt.target);
+				pushMove(gameInfo.player1, index);
+				if (!over(gameInfo.board))
+					aiMove();
+			}
+			gameInfo.onClickFunc = onClick;
+
+			function aiMove() {
+				removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+				const index = findBestMove(gameInfo.board);
+				pushMove(gameInfo.player2, index); // pushMove adds listeners
+			}
+			/* ======================================= */
+			function score(board, depth) {
+				if (winning(gameInfo.player1, board))
+					return -10 + depth;
+				else if (winning(gameInfo.player2, board))
+					return 10 - depth;
+				if (!emptySpots(board).length)
+					return 0;
+			}
+
+			function minimax(board, depth, maximizing) {
+				if (over(board))
+					return score(board, depth);
+
+				const freeSpots = emptySpots(board);
+
+				if (maximizing) {
+					let bestValue = -Infinity;
+					for (let i = 0; i < freeSpots.length; i++) {
+						board[freeSpots[i]] = gameInfo.player2;
+						bestValue = Math.max(bestValue, minimax(board, depth + 1, false));
+						board[freeSpots[i]] = null;
+					}
+					return bestValue;
+				}
+
+				else {
+					let bestValue = Infinity;
+					for (let i = 0; i < freeSpots.length; i++) {
+						board[freeSpots[i]] = gameInfo.player1;
+						bestValue = Math.min(bestValue, minimax(board, depth + 1, true));
+						board[freeSpots[i]] = null;
+					}
+					return bestValue;
+				}
+			}
+
+
+			function findBestMove(board) {
+				let bestValue = -Infinity;
+				let bestMoves = [];
+				let randNumBewteen = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+				const freeSpots = emptySpots(board);
+
+				for (let i = 0; i < freeSpots.length; i++) {
+					board[freeSpots[i]] = gameInfo.player2;
+					const moveValue = minimax(board, 0, false);
+					board[freeSpots[i]] = null;
+					if (moveValue > bestValue) {
+						bestValue = moveValue;
+						bestMoves = [freeSpots[i]];
+					}
+					if (moveValue === bestValue)
+						bestMoves.push(freeSpots[i]);
+				}
+
+				const s = randNumBewteen(0, bestMoves.length - 1);
+				console.log("best move: " + bestMoves[s]);
+				return bestMoves[s];
+			}
+			/* ========================================= */
 		};
 
 		const twoPlayers = function() {
@@ -40,40 +120,6 @@
 				pushMove(gameInfo.onTurn, index);
 			}
 			gameInfo.onClickFunc = onClick;
-
-			function pushMove(letter, index) { // letter is unnecessary gameInfo.onTurn could be instad of letter
-				gameInfo.board[index] = letter;
-				removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
-				gameInfo.onTurn = gameInfo.onTurn === "X" ? "O" : "X";
-
-				const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-				const x = Number(elements.svgRects[index].getAttribute("x").replace(/\%/, "")) + 9;
-				const y = Number(elements.svgRects[index].getAttribute("y").replace(/\%/, "")) + 24;
-				text.setAttribute("x", `${x}%`);
-				text.setAttribute("y", `${y}%`);
-				text.textContent = letter.toLowerCase();
-				text.classList.add(letter.toLowerCase());
-
-				elements.svg.append(text);
-
-				if (over(gameInfo.board)) {
-					gameInfo.numOfGames++;
-					const promise = new Promise(() => {
-						setTimeout(function() {
-							if (whoWon(gameInfo.board))
-								addScoreTo(whoWon(gameInfo.board));
-							clearBoard();
-						}, 500);
-					});
-
-					promise.then(() => {
-						addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
-					});
-				}
-				else {
-					addListeners(emptySpots(gameInfo.board), onClick);
-				}
-			}
 		};
 
 		function call() {
@@ -101,6 +147,36 @@
 				if (gameInfo.winCombs[i].every(num => board[num] === letter))
 					return true;
 			return false;
+		}
+
+		function pushMove(letter, index) { // letter is unnecessary gameInfo.onTurn could be instad of letter
+			console.log("pushMove", letter, index);
+			gameInfo.board[index] = letter;
+			removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
+			gameInfo.onTurn = gameInfo.onTurn === "X" ? "O" : "X";
+
+			const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+			const x = Number(elements.svgRects[index].getAttribute("x").replace(/\%/, "")) + 9;
+			const y = Number(elements.svgRects[index].getAttribute("y").replace(/\%/, "")) + 24;
+			text.setAttribute("x", `${x}%`);
+			text.setAttribute("y", `${y}%`);
+			text.textContent = letter.toLowerCase();
+			text.classList.add(letter.toLowerCase());
+
+			elements.svg.append(text);
+
+			if (over(gameInfo.board)) {
+				gameInfo.numOfGames++;
+				setTimeout(function() {
+					if (whoWon(gameInfo.board))
+						addScoreTo(whoWon(gameInfo.board));
+					clearBoard();
+					addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
+				}, 500);
+			}
+			else {
+				addListeners(emptySpots(gameInfo.board), gameInfo.onClickFunc);
+			}
 		}
 
 		function over(board) {
