@@ -2,121 +2,90 @@
 	const hide = elem => elem.classList.add("hidden");
 	const show = elem => elem.classList.remove("hidden");
 
+	const switcher = {
+		beginning: beginning(),
+		selectLetter: undefined,
+		createGame: undefined
+	};
+
 	/* ======== CREATE BOARD ======== */
-	const createGame = function(setupAI, player1Letter) {
+	function createGame(setupAI, player1Letter) {
 		const boardElem = document.querySelector("#board");
-		const SVG = document.querySelector("svg");
-		const SVGRects = document.querySelectorAll(".rect");
-		const SVGRectsIndexesFull = [...Array(9).keys()]; // [0, 1, 2, 3, 4, 5, 6, 7, 8]
-		const winCombs = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
-		const board = Array(9);
-		const resetButton = document.querySelector("#reset-btn");
-		const playerX = "X";
-		const playerO = "O";
-		const aiPlayer = playerX;
-		const humanPlayer = playerO;
-		let turn = humanPlayer;
-		let starting = humanPlayer;
 
-		show(boardElem);
+		const gameInfo = {
+			againstComputer: setupAI,
+			board: Array(9),
+			numOfGames: 0,
+			onTurn: "X", // X always beginns
+			onClickFunc: undefined,
+			player1: player1Letter,
+			player2: player1Letter === "X" ? "O" : "X",
+			winCombs: [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+		};
 
-		resetButton.addEventListener("click", function() {
+		const elements = {
+			svg: document.querySelector("svg"),
+			svgRects: document.querySelectorAll(".rect"),
+		};
+
+		const onePlayer = function() {
+			console.log("onePlayer");
+		};
+
+		const twoPlayers = function() {
+			addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+
+			function onClick(evt) {
+				const index = Array.from(evt.target.parentNode.children).indexOf(evt.target);
+				pushMove(gameInfo.onTurn, index);
+			}
+			gameInfo.onClickFunc = onClick;
+
+			function pushMove(letter, index) { // letter is unnecessary gameInfo.onTurn could be instad of letter
+				gameInfo.board[index] = letter;
+				removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+				gameInfo.onTurn = gameInfo.onTurn === "X" ? "O" : "X";
+
+				const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+				const x = Number(elements.svgRects[index].getAttribute("x").replace(/\%/, "")) + 9;
+				const y = Number(elements.svgRects[index].getAttribute("y").replace(/\%/, "")) + 24;
+				text.setAttribute("x", `${x}%`);
+				text.setAttribute("y", `${y}%`);
+				text.textContent = letter.toLowerCase();
+				text.classList.add(letter.toLowerCase());
+
+				elements.svg.append(text);
+
+				if (over(gameInfo.board)) {
+					gameInfo.numOfGames++;
+					const promise = new Promise(() => {
+						setTimeout(function() {
+							if (whoWon(gameInfo.board))
+								addScoreTo(whoWon(gameInfo.board));
+							clearBoard();
+						}, 500);
+					});
+
+					promise.then(() => {
+						addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+					});
+				}
+				else {
+					addListeners(emptySpots(gameInfo.board), onClick);
+				}
+			}
+		};
+
+		function call() {
+			gameInfo.againstComputer ? onePlayer() : twoPlayers();
+			show(boardElem);
+		}
+
+		function terminate() {
+			clearScore();
 			clearBoard();
-			resetScore();
-		});
-
-		function onClick(evt) {
-			const target = evt.target;
-			if (turn === humanPlayer && emptySpots(board).length > 1) {
-				pushMove(turn, Array.from(target.parentNode.children).indexOf(target));
-				pushMove(turn, findBestMove(board));
-			}
-			else if (turn === humanPlayer)
-				pushMove(turn, Array.from(target.parentNode.children).indexOf(target));
-		}
-
-		function removeListeners(indexes) {
-			for (const currNum of indexes) {
-				SVGRects[currNum].removeEventListener("click", onClick);
-				SVGRects[currNum].style.cursor = "default";
-			}
-		}
-
-		function addListeners(indexes) {
-			for (const currNum of indexes) {
-				SVGRects[currNum].addEventListener("click", onClick);
-				SVGRects[currNum].style.cursor = "pointer";
-			}
-		}
-
-		addListeners(SVGRectsIndexesFull);
-
-		function pushMove(letter, index) {
-			removeListeners(SVGRectsIndexesFull);
-			if (letter === aiPlayer)
-				turn = humanPlayer;
-			else
-				turn = aiPlayer;
-			const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-			const x = Number(SVGRects[index].getAttribute("x").replace(/\%/, "")) + 9;
-			const y = Number(SVGRects[index].getAttribute("y").replace(/\%/, "")) + 24;
-			text.setAttribute("x", `${x}%`);
-			text.setAttribute("y", `${y}%`);
-			text.textContent = letter.toLowerCase();
-			text.classList.add(letter.toLowerCase());
-			SVG.append(text);
-			board[index] = letter;
-			if (over(board)) {
-				const promiseClearBoard = (ms) => new Promise(() => setTimeout(clearBoard, ms));
-				promiseClearBoard(500).then(() => clearBoard());
-				if (isWinComb(board, humanPlayer))
-					addToScore(humanPlayer);
-				else if (isWinComb(board, aiPlayer))
-					addToScore(aiPlayer);
-			}
-			else
-				addListeners(emptySpots(board));
-		}
-
-		function clearBoard() {
-			for (let i = 0; i < board.length; i++)
-				board[i] = null;
-			const xs = document.querySelectorAll(".x");
-			const os = document.querySelectorAll(".o");
-			for (let i = 0; i < xs.length; i++)
-				xs[i].parentNode.removeChild(xs[i]);
-			for (let i = 0; i < os.length; i++)
-				os[i].parentNode.removeChild(os[i]);
-			if (starting === aiPlayer) {
-				starting = humanPlayer;
-				turn = humanPlayer;
-				addListeners(SVGRectsIndexesFull);
-			}
-			else {
-				starting = aiPlayer;
-				turn = aiPlayer;
-				pushMove(turn, findBestMove(board));
-			}
-		}
-
-		function addToScore(letter) {
-			const scoreElem = document.querySelector(`.score-${letter.toLowerCase()}`);
-			console.log(scoreElem);
-			scoreElem.textContent = Number(scoreElem.textContent) + 1;
-		}
-
-		function resetScore() {
-			const scoreX = document.querySelector(".score-x");
-			const scoreO = document.querySelector(".score-o");
-			scoreX.textContent = 0;
-			scoreO.textContent = 0;
-		}
-
-		function isWinComb(board, letter) {
-			for (let i = 0; i < winCombs.length; i++)
-				if (winCombs[i].every(elem => board[elem] === letter))
-					return true;
-			return false;
+			removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
+			hide(boardElem);
 		}
 
 		function emptySpots(board) {
@@ -127,114 +96,143 @@
 			return indexes;
 		}
 
+		function winning(letter, board) {
+			for (let i = 0; i < gameInfo.winCombs.length; i++)
+				if (gameInfo.winCombs[i].every(num => board[num] === letter))
+					return true;
+			return false;
+		}
+
 		function over(board) {
-			return isWinComb(board, humanPlayer) || isWinComb(board, aiPlayer) || !emptySpots(board).length;
+			return winning("X", board) || winning("O", board) || !emptySpots(board).length;
 		}
 
-		function score(board, depth) {
-			if (isWinComb(board, humanPlayer))
-				return -10 + depth;
-			else if (isWinComb(board, aiPlayer))
-				return 10 - depth;
-			if (!emptySpots(board).length)
-				return 0;
+		function whoWon(board) {
+			if (winning("X", board))
+				return "X";
+			else if (winning("O", board))
+				return "O";
 		}
 
-		function minimax(board, depth, maximizing) {
-			if (over(board))
-				return score(board, depth);
+		function clearBoard() {
+			gameInfo.board = Array(9);
 
-			const freeSpots = emptySpots(board);
+			const texts = document.querySelectorAll(".x, .o");
+			for (let i = 0; i < texts.length; i++)
+				texts[i].parentNode.removeChild(texts[i]);
+		}
 
-			if (maximizing) {
-				let bestValue = -Infinity;
-				for (let i = 0; i < freeSpots.length; i++) {
-					board[freeSpots[i]] = aiPlayer;
-					bestValue = Math.max(bestValue, minimax(board, depth + 1, false));
-					board[freeSpots[i]] = null;
-				}
-				return bestValue;
+		function addScoreTo(letter) {
+			const scoreElem = document.querySelector(`.score-${letter.toLowerCase()}`);
+			const newScore = Number(scoreElem.textContent) + 1;
+			scoreElem.textContent = newScore;
+		}
+
+		function clearScore() {
+			const scoreX = document.querySelector(".score-x");
+			const scoreO = document.querySelector(".score-o");
+			scoreX.textContent = 0;
+			scoreO.textContent = 0;
+		}
+
+		function removeListeners(indexes, func) {
+			for (const num of indexes) {
+				elements.svgRects[num].removeEventListener("click", func);
+				elements.svgRects[num].style.cursor = "default";
 			}
+		}
 
-			else {
-				let bestValue = Infinity;
-				for (let i = 0; i < freeSpots.length; i++) {
-					board[freeSpots[i]] = humanPlayer;
-					bestValue = Math.min(bestValue, minimax(board, depth + 1, true));
-					board[freeSpots[i]] = null;
-				}
-				return bestValue;
+		function addListeners(indexes, func) {
+			for (const num of indexes) {
+				elements.svgRects[num].addEventListener("click", func);
+				elements.svgRects[num].style.cursor = "pointer";
 			}
 		}
 
-
-		function findBestMove(board) {
-			let bestValue = -Infinity;
-			let bestMoves = [];
-			let randNumBewteen = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
-			const freeSpots = emptySpots(board);
-
-			for (let i = 0; i < freeSpots.length; i++) {
-				board[freeSpots[i]] = aiPlayer;
-				const moveValue = minimax(board, 0, false);
-				board[freeSpots[i]] = null;
-				if (moveValue > bestValue) {
-					bestValue = moveValue;
-					bestMoves = [freeSpots[i]];
-				}
-				if (moveValue === bestValue)
-					bestMoves.push(freeSpots[i]);
-			}
-
-			const s = randNumBewteen(0, bestMoves.length - 1);
-			console.log("best move: " + bestMoves[s]);
-			return bestMoves[s];
-		}
-
-		if (turn === aiPlayer)
-			pushMove(aiPlayer, findBestMove(board));
-	};
+		return {
+			call: call,
+			terminate: terminate
+		};
+	}
 
 	/* ======== SELECT LETTER ======== */
-	const selectLetter = function(numOfPlayers) {
+	function selectLetter(numOfPlayers) {
 		const selectLetterElem = document.querySelector("#select-letter");
 		const heading = document.querySelector("#select-letter .heading");
 		const btns = document.querySelectorAll(".select-letter-btn");
 		const setupAI = numOfPlayers === 1;
 
-		btns[0].addEventListener("click", function() {
+		function call() {
+			btns[0].addEventListener("click", chooseX);
+			btns[1].addEventListener("click", chooseO);
+			heading.textContent = `${ setupAI ? "Player 1 would" : "Would" } you like to be X or O?`;
+			show(selectLetterElem);
+		}
+
+		function terminate() {
+			btns[0].removeEventListener("click", chooseX);
+			btns[1].removeEventListener("click", chooseO);
 			hide(selectLetterElem);
-			createGame(setupAI, "X");
-		});
+		}
 
-		btns[1].addEventListener("click", function() {
-			hide(selectLetterElem);
-			createGame(setupAI, "O");
-		});
+		function chooseX() {
+			switcher.selectLetter.terminate();
+			switcher.createGame = createGame(setupAI, "X");
+			switcher.createGame.call();
+		}
 
-		heading.textContent = `${ setupAI ? "Player 1 would" : "Would" } you like to be X or O?`;
-		show(selectLetterElem);
-	};
-
-	/* ======== HOMEPAGE ======== */
-	const beginning = function() {
-		const btns = document.querySelectorAll(".beginning-btn");
-		const beginningElem = document.querySelector("#beginning");
-		const hideElem = () => hide(beginningElem);
-
-		btns[0].addEventListener("click", function() {
-			hide(beginningElem);
-			selectLetter(1);
-		});
-		btns[1].addEventListener("click", function() {
-			hide(beginningElem);
-			selectLetter(2);
-		});
+		function chooseO() {
+			switcher.selectLetter.terminate();
+			switcher.createGame = createGame(setupAI, "O");
+			switcher.createGame.call();
+		}
 
 		return {
-			hide: hideElem
+			call: call,
+			terminate: terminate
 		};
-	};
+	}
 
-	beginning();
+	/* ======== HOMEPAGE ======== */
+	function beginning() {
+		const btns = document.querySelectorAll(".beginning-btn");
+		const beginningElem = document.querySelector("#beginning");
+
+		function call() {
+			btns[0].addEventListener("click", onePlayer);
+			btns[1].addEventListener("click", twoPlayers);
+			show(beginningElem);
+		}
+
+		function terminate() {
+			btns[0].removeEventListener("click", onePlayer);
+			btns[1].removeEventListener("click", twoPlayers);
+			hide(beginningElem);
+		}
+
+		function onePlayer() {
+			switcher.beginning.terminate();
+			switcher.selectLetter = selectLetter(1);
+			switcher.selectLetter.call();
+		}
+
+		function twoPlayers() {
+			switcher.beginning.terminate();
+			switcher.selectLetter = selectLetter(2);
+			switcher.selectLetter.call();
+		}
+
+		return {
+			call: call,
+			terminate: terminate,
+		};
+	}
+
+	switcher.beginning.call();
+
+	const homeBtn = document.querySelector("#home-btn");
+	homeBtn.addEventListener("click", function() {
+		switcher.createGame.terminate();
+		switcher.beginning.call();
+	});
 }
