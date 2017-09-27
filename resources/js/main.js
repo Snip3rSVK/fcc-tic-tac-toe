@@ -19,6 +19,7 @@
 			onTurn: "X", // X always beginns
 			startedLastGame: "X",
 			onClickFunc: null,
+			timeouts: [],
 			player1: player1Letter,
 			player2: player1Letter === "X" ? "O" : "X",
 			winCombs: [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
@@ -42,12 +43,29 @@
 				pushMove(gameInfo.player1, index);
 				if (!over(gameInfo.board))
 					aiMove();
+				decideWhoStarts();
 			}
 			gameInfo.onClickFunc = onClick;
 
 			function aiMove() {
 				const index = findBestMove(gameInfo.board);
 				pushMove(gameInfo.player2, index); // pushMove adds listeners
+				console.log("sss", emptySpots(gameInfo.board).length);
+				decideWhoStarts();
+			}
+
+			function decideWhoStarts() {
+				removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+				gameInfo.timeouts.push(setTimeout(function() {
+					if (gameInfo.onTurn === gameInfo.player2 && emptySpots(gameInfo.board).length === 9) {
+						console.log("mooooooooooove");
+						addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+						aiMove();
+					}
+					else {
+						addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+					}
+				}, 550));
 			}
 			/* ======================================= */
 			function score(board, depth) {
@@ -130,6 +148,7 @@
 		function terminate() {
 			clearScore();
 			clearBoard();
+			clearTimeouts();
 			removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
 			hide(boardElem);
 		}
@@ -167,19 +186,14 @@
 
 			if (over(gameInfo.board)) {
 				gameInfo.numOfGames++;
-				setTimeout(function() {
+				gameInfo.startedLastGame = gameInfo.startedLastGame === "X" ? "O" : "X";
+				gameInfo.onTurn = gameInfo.startedLastGame;
+				gameInfo.timeouts.push(setTimeout(function() {
 					if (whoWon(gameInfo.board))
 						addScoreTo(whoWon(gameInfo.board));
 					clearBoard();
-					gameInfo.startedLastGame = gameInfo.startedLastGame === "X" ? "O" : "X";
-					gameInfo.onTurn = gameInfo.startedLastGame;
-					if (gameInfo.onTurn === gameInfo.player2 && setupAI) {
-						console.log("pushMove onePlayer");
-						onePlayer();
-						console.log("pushMove", gameInfo.board);
-					}
 					addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
-				}, 500);
+				}, 500));
 			}
 			else {
 				addListeners(emptySpots(gameInfo.board), gameInfo.onClickFunc);
@@ -203,6 +217,11 @@
 			const texts = document.querySelectorAll(".x, .o");
 			for (let i = 0; i < texts.length; i++)
 				texts[i].parentNode.removeChild(texts[i]);
+		}
+
+		function clearTimeouts() {
+			for (let i = 0; i < gameInfo.timeouts.length; i++)
+				clearTimeout(gameInfo.timeouts[i]);
 		}
 
 		function addScoreTo(letter) {
@@ -248,7 +267,7 @@
 		function call() {
 			btns[0].addEventListener("click", chooseX);
 			btns[1].addEventListener("click", chooseO);
-			heading.textContent = `${ setupAI ? "Player 1 would" : "Would" } you like to be X or O?`;
+			heading.textContent = `${ !setupAI ? "Player 1 would" : "Would" } you like to be X or O?`;
 			show(selectLetterElem);
 		}
 
