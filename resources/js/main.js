@@ -15,6 +15,7 @@
 		const gameInfo = {
 			againstComputer: setupAI,
 			board: Array(9),
+			delay: 600,
 			numOfGames: 0,
 			onTurn: "X", // X always beginns
 			startedLastGame: "X",
@@ -39,33 +40,30 @@
 				aiMove();
 
 			function onClick(evt) {
-				const index = Array.from(evt.target.parentNode.children).indexOf(evt.target);
-				pushMove(gameInfo.player1, index);
+				const index = Array.from(evt.target.parentNode.children).indexOf(evt.target); // Array.from not working on Edge and IE
+				const pushMovePromise = pushMove(gameInfo.player1, index);
 				if (!over(gameInfo.board))
 					aiMove();
-				decideWhoStarts();
+				decideWhoStarts(pushMovePromise);
 			}
 			gameInfo.onClickFunc = onClick;
 
 			function aiMove() {
 				const index = findBestMove(gameInfo.board);
-				pushMove(gameInfo.player2, index); // pushMove adds listeners
-				console.log("sss", emptySpots(gameInfo.board).length);
-				decideWhoStarts();
+				const pushMovePromise = pushMove(gameInfo.player2, index); // pushMove adds listeners
+				decideWhoStarts(pushMovePromise);
 			}
 
-			function decideWhoStarts() {
+			function decideWhoStarts(promise) {
 				removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
-				gameInfo.timeouts.push(setTimeout(function() {
-					if (gameInfo.onTurn === gameInfo.player2 && emptySpots(gameInfo.board).length === 9) {
-						console.log("mooooooooooove");
+				if (promise && gameInfo.onTurn === gameInfo.player2) {
+					promise.then(() => {
 						addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
 						aiMove();
-					}
-					else {
-						addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
-					}
-				}, 550));
+					});
+				}
+				else if (!over(gameInfo.board))
+					addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
 			}
 			/* ======================================= */
 			function score(board, depth) {
@@ -111,6 +109,9 @@
 				let randNumBewteen = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 				const freeSpots = emptySpots(board);
 
+				if (emptySpots(board).length === 9)
+					return randNumBewteen(0, 8);
+
 				for (let i = 0; i < freeSpots.length; i++) {
 					board[freeSpots[i]] = gameInfo.player2;
 					const moveValue = minimax(board, 0, false);
@@ -119,13 +120,13 @@
 						bestValue = moveValue;
 						bestMoves = [freeSpots[i]];
 					}
-					if (moveValue === bestValue)
+					else if (moveValue === bestValue)
 						bestMoves.push(freeSpots[i]);
 				}
 
-				const s = randNumBewteen(0, bestMoves.length - 1);
-				console.log("best move: " + bestMoves[s]);
-				return bestMoves[s];
+				const randNum = randNumBewteen(0, bestMoves.length - 1);
+				console.log("best moves: " + bestMoves);
+				return bestMoves[randNum];
 			}
 			/* ========================================= */
 		};
@@ -134,7 +135,7 @@
 			addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
 
 			function onClick(evt) {
-				const index = Array.from(evt.target.parentNode.children).indexOf(evt.target);
+				const index = Array.from(evt.target.parentNode.children).indexOf(evt.target);  // Array.from not working on Edge and IE
 				pushMove(gameInfo.onTurn, index);
 			}
 			gameInfo.onClickFunc = onClick;
@@ -169,7 +170,6 @@
 		}
 
 		function pushMove(letter, index) { // letter is unnecessary gameInfo.onTurn could be instad of letter
-			console.log("pushMove", letter, index);
 			gameInfo.board[index] = letter;
 			removeListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
 			gameInfo.onTurn = gameInfo.onTurn === "X" ? "O" : "X";
@@ -177,6 +177,7 @@
 			const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
 			const x = Number(elements.svgRects[index].getAttribute("x").replace(/\%/, "")) + 9;
 			const y = Number(elements.svgRects[index].getAttribute("y").replace(/\%/, "")) + 24;
+			text.setAttribute("data-index", index);
 			text.setAttribute("x", `${x}%`);
 			text.setAttribute("y", `${y}%`);
 			text.textContent = letter.toLowerCase();
@@ -188,16 +189,22 @@
 				gameInfo.numOfGames++;
 				gameInfo.startedLastGame = gameInfo.startedLastGame === "X" ? "O" : "X";
 				gameInfo.onTurn = gameInfo.startedLastGame;
-				gameInfo.timeouts.push(setTimeout(function() {
-					if (whoWon(gameInfo.board))
-						addScoreTo(whoWon(gameInfo.board));
-					clearBoard();
-					addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
-				}, 500));
+				if (whoWon(gameInfo.board))
+					showWinComb();
+				const promise = new Promise((resolve) => {
+					gameInfo.timeouts.push(setTimeout(function() {
+						if (whoWon(gameInfo.board))
+							addScoreTo(whoWon(gameInfo.board));
+						clearBoard();
+						addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], gameInfo.onClickFunc);
+						resolve("success");
+					}, gameInfo.delay));
+				});
+				return promise;
+				//return gameInfo.onTurn
 			}
-			else {
+			else
 				addListeners(emptySpots(gameInfo.board), gameInfo.onClickFunc);
-			}
 		}
 
 		function over(board) {
@@ -209,6 +216,21 @@
 				return "X";
 			else if (winning("O", board))
 				return "O";
+		}
+
+		function showWinComb() {
+			const winning = whoWon(gameInfo.board);
+			let winComb;
+			for (let i = 0; i < gameInfo.winCombs.length; i++)
+				if (gameInfo.winCombs[i].every(num => gameInfo.board[num] === winning))
+					winComb = gameInfo.winCombs[i];
+			for (const num of winComb)
+				highlightLetter(num);
+		}
+
+		function highlightLetter(index) {
+			const letterElem = document.querySelector(`text[data-index="${index}"]`);
+			letterElem.classList.add("highlightLetter");
 		}
 
 		function clearBoard() {
