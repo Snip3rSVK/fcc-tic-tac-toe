@@ -7,7 +7,8 @@ body {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: radial-gradient(circle at center, #232323 0%, #151515 55%);
+	background: #151515;
+	background: radial-gradient(circle at center, #232323 0%, #151515 65%);
 	font-family: "Varela Round";
 	color: #919191;
 	user-select: none;
@@ -17,7 +18,7 @@ main {
 	display: flex;
 	align-items: center;
 	flex-direction: column;
-	max-width: 300px;
+	max-width: 18.75em;
 }
 
 #beginning, #select-letter, #board {
@@ -29,9 +30,16 @@ main {
 #select-letter-btn-wrapper {
 	display: flex;
 	width: 100%;
-	justify-content: space-around;
-	padding: 0 21%;
+	justify-content: center;
 	box-sizing: border-box;
+}
+
+svg text, .select-letter-btn {
+	font-size: 5.375em;
+}
+
+.select-letter-btn:first-child {
+	padding-right: 2.5rem;
 }
 
 .select-letter-btn {
@@ -39,7 +47,6 @@ main {
 	outline: 0;
 	border: 0;
 	padding: 0;
-	font-size: 86px;
 	background: transparent;
 	cursor: pointer;
 }
@@ -53,14 +60,14 @@ main {
 }
 
 .heading {
-	font-size: 30px;
+	font-size: 1.875em;
 	font-weight: 400;
 	text-align: center;
 }
 
 svg {
-	width: 300px;
-	height: 300px;
+	width: 18.75em;
+	height: 18.75em;
 	overflow: visible;
 }
 
@@ -72,10 +79,6 @@ svg rect {
 svg .line {
 	fill: #4a4a4a !important;
 	fill-opacity: 1;
-}
-
-svg text {
-	font-size: 86px;
 }
 
 .x {
@@ -94,7 +97,7 @@ svg text {
 	background: #4a4a4a;
 	border-radius: 100px;
 	color: #a3a3a3;
-	padding: 3px 16px;
+	padding: .1875em 1em;
 	font-family: "Varela Round";
 	cursor: pointer;
 	margin: 0;
@@ -105,21 +108,31 @@ svg text {
 	color: #fff;
 }
 
-#home-btn {
-	font-size: 14px;
+#score-and-home-btn-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.small-btn {
+	font-size: .875em;
+	padding: .22em 1.05em;
+}
+
+#score, .beginning-btn {
+	font-size: 1.1875em;
 }
 
 .beginning-btn {
-	font-size: 19px;
-	padding: 8px 28px;
-	margin-top: 24px;
+	padding: .4em;
+	width: 13.75rem;
+	margin-top: 1.3em;
 }
 
 #score {
-	font-size: 19px;
 	color: #434343;
-	margin: 14px 0 54px 0;
-	letter-spacing: 4px;
+	margin: .8em 0 2.9em 0;
+	letter-spacing: .21em;
 }
 
 .orange {
@@ -132,4 +145,78 @@ svg text {
 
 .hidden {
 	display: none !important;
+}
+
+@media (max-height: 28.125em) and (orientation: landscape) {
+	#board {
+		flex-direction: row-reverse;
+	}
+
+	#score-and-home-btn-wrapper {
+		margin-left: 3.375em;
+	}
+
+	#score {
+		margin: .875em 0 0 0;
+	}
+
+	@media (max-height: 20em) {
+		svg {
+			max-width: 90vh;
+			max-height: 90vh;
+		}
+
+		svg text, .select-letter-btn {
+			font-size: 25.8vh; /* 90vw / 3 * 86 / 100 */
+		}
+	}
+
+}
+
+@media (max-height: 28.125em) {
+	#score-and-home-btn-wrapper {
+		flex-direction: row;
+		width: 90vw;
+		justify-content: space-between;
+		margin-bottom: 1em;
+	}
+
+	#score {
+		margin: 0;
+	}
+}
+
+@media (max-width: 20em) {
+	.select-letter-btn:first-child {
+		padding-right: 10vw;
+	}
+
+	svg {
+		max-width: 90vw;
+		max-height: 90vw;
+	}
+
+	svg text, .select-letter-btn {
+		font-size: 25.8vw; /* 90vw / 3 * 86 / 100 */
+	}
+}
+
+@media(max-width: 15em) {
+	.small-btn {
+		font-size: 6vw;
+	}
+
+	#score, .beginning-btn {
+		font-size: 8vw;
+	}
+
+	.beginning-btn {
+		width: 90vw;
+	}
+}
+
+@media(max-width: 12.5em) {
+	.heading {
+		font-size: 14vw;
+	}
 }

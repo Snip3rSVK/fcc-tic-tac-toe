@@ -27,6 +27,7 @@
 		};
 
 		const elements = {
+			body: document.querySelector("body"),
 			svg: document.querySelector("svg"),
 			svgRects: document.querySelectorAll(".rect"),
 		};
@@ -182,7 +183,7 @@
 			text.setAttribute("y", `${y}%`);
 			text.textContent = letter.toLowerCase();
 			text.classList.add(letter.toLowerCase());
-
+			//text.style.fontSize = elements.svg.getBoundingClientRect().width / 3 * 86 / 100;
 			elements.svg.append(text);
 
 			if (over(gameInfo.board)) {
@@ -201,7 +202,6 @@
 					}, gameInfo.delay));
 				});
 				return promise;
-				//return gameInfo.onTurn
 			}
 			else
 				addListeners(emptySpots(gameInfo.board), gameInfo.onClickFunc);
@@ -289,7 +289,7 @@
 		function call() {
 			btns[0].addEventListener("click", chooseX);
 			btns[1].addEventListener("click", chooseO);
-			heading.textContent = `${ !setupAI ? "Player 1 would" : "Would" } you like to be X or O?`;
+			heading.innerHTML = `${ !setupAI ? "Player 1 would" : "Would" } you like ${ !setupAI ? "" : "<br>" } to be X or O?`;
 			show(selectLetterElem);
 		}
 
