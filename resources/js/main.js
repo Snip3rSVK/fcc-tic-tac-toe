@@ -284,11 +284,13 @@
 		const selectLetterElem = document.querySelector("#select-letter");
 		const heading = document.querySelector("#select-letter .heading");
 		const btns = document.querySelectorAll(".select-letter-btn");
+		const backBtn = document.querySelector("#back-btn");
 		const setupAI = numOfPlayers === 1;
 
 		function call() {
 			btns[0].addEventListener("click", chooseX);
 			btns[1].addEventListener("click", chooseO);
+			backBtn.addEventListener("click", back);
 			heading.innerHTML = `${ !setupAI ? "Player 1 would" : "Would" } you like ${ !setupAI ? "" : "<br>" } to be X or O?`;
 			show(selectLetterElem);
 		}
@@ -296,6 +298,7 @@
 		function terminate() {
 			btns[0].removeEventListener("click", chooseX);
 			btns[1].removeEventListener("click", chooseO);
+			backBtn.removeEventListener("click", back);
 			hide(selectLetterElem);
 		}
 
@@ -309,6 +312,11 @@
 			switcher.selectLetter.terminate();
 			switcher.createGame = createGame(setupAI, "O");
 			switcher.createGame.call();
+		}
+
+		function back() {
+			switcher.selectLetter.terminate();
+			switcher.beginning.call();
 		}
 
 		return {
