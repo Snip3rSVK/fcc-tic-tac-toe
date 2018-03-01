@@ -37,10 +37,11 @@
 		const onePlayer = function() {
 			/* gameInfo.player1 -> human
 			*  gameInfo.player2 -> computer */
-			addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
 
 			if (gameInfo.onTurn === gameInfo.player2)
 				aiMove();
+			else
+				addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
 
 			function onClick(evt) {
 				const index = Array.from(evt.target.parentNode.children).indexOf(evt.target); // Array.from not working on Edge and IE
@@ -66,7 +67,7 @@
 					});
 				}
 				else if (!over(gameInfo.board))
-					addListeners(emptySpots(gameInfo.board), gameInfo.onClickFunc);
+					addListeners(emptySpots(gameInfo.board), onClick);
 			}
 
 			function score(board, depth) {
