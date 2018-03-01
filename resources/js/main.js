@@ -66,9 +66,9 @@
 					});
 				}
 				else if (!over(gameInfo.board))
-					addListeners([0, 1, 2, 3, 4, 5, 6, 7, 8], onClick);
+					addListeners(emptySpots(gameInfo.board), gameInfo.onClickFunc);
 			}
-			/* ======================================= */
+
 			function score(board, depth) {
 				if (winning(gameInfo.player1, board))
 					return -10 + depth;
@@ -128,7 +128,6 @@
 				}
 
 				const randNum = randNumBewteen(0, bestMoves.length - 1);
-				console.log("best moves: " + bestMoves);
 				return bestMoves[randNum];
 			}
 			/* ========================================= */
